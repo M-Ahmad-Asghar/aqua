@@ -1,139 +1,86 @@
-import {
-  Box,
-  Flex,
-  Heading,
-  Image,
-  Spinner,
-  StatUpArrow,
-  Text,
-  useUpdateEffect,
-} from "@chakra-ui/react";
-import { useEffect, useState } from "react";
-import ReactPlayer from "react-player";
-import { useDispatch, useSelector } from "react-redux";
-import { Pagination } from "../../components/pagination";
-import { CustomButton } from "../../components/pagination/button";
-import { getVideoTitleFromURL } from "../../helpers";
-import { updateSelectedVideo } from "../../store/reducers/webinar";
-import {
-  selectData,
-  selectSelectedVideo,
-  selectWabinarLoading,
-  selectWebinarVideos,
-} from "../../store/selectors";
-import { fetchWebinarVideos } from "../../store/thunks/webinar";
+import React, { useEffect, useState } from "react";
+import { Box, Grid, Button, Heading, Flex, Text, Link } from "@chakra-ui/react";
+import client from "../../config/contentfulClient";
+import { Link as RouterLink } from "react-router-dom";
 
-function VideoDetailPage() {
-  const dispatch = useDispatch();
-  const videos = useSelector(selectWebinarVideos);
-  const loading = useSelector(selectWabinarLoading);
-  const selectedVideo = useSelector(selectSelectedVideo);
-  const data = useSelector(selectData);
-  const [page, setPage] = useState(1);
-  const videosSize = selectedVideo ? 6 : 12;
+const Videos = () => {
+  const [videos, setVideos] = useState([]);
+  const [viewType, setViewType] = useState("thumbnails"); // "list" or "thumbnails"
 
   useEffect(() => {
-    dispatch(
-      fetchWebinarVideos({
-        page,
-        pageSize: videosSize,
-      })
-    );
+    client
+      .getEntries({ content_type: "videoModel" }) // Replace "videoModel" with your actual content model ID
+      .then((response) => setVideos(response.items))
+      .catch((error) => console.error("Error fetching videos:", error));
   }, []);
-
-  useUpdateEffect(() => {
-    dispatch(
-      fetchWebinarVideos({
-        page: selectedVideo ? Math.floor(Math.random() * (100 - 1 + 1)) + 1 : 1,
-        pageSize: videosSize,
-      })
-    );
-    setPage(1);
-  }, [selectedVideo]);
-
-  useUpdateEffect(() => {
-    dispatch(
-      fetchWebinarVideos({
-        page,
-        pageSize: videosSize,
-      })
-    );
-  }, [page]);
-
-  const onVideoClickHandler = (video) => {
-    dispatch(updateSelectedVideo(video));
-  };
-
-  const onBack = () => {
-    dispatch(updateSelectedVideo(null));
-  };
-
+  console.log("videos", videos);
   return (
-    <Box minH={"calc(100vh - 144px)"}>
-      {selectedVideo && (
-        <Box p={"16px"}>
-          <Flex
-            alignItems={"center"}
-            gap={"10px"}
-            cursor={"pointer"}
-            width={"fit-content"}
-            onClick={onBack}
-            py={"8px"}
-          >
-            <StatUpArrow transform={"rotate(-90deg)"} /> Back to videos
-          </Flex>
-          <Box width={{ base: "100%", lg: "800px" }}>
-            <ReactPlayer
-              width={"100%"}
-              muted={false}
-              loop
-              playing
-              controls
-              url={selectedVideo?.["video_files"]?.[0]?.link}
-            />
-          </Box>
-        </Box>
-      )}
-      <Heading p={'16px'}>Videos</Heading>
+    <Box maxWidth="1200px" mx="auto" p={5}>
+      {/* Header */}
+      <Flex justifyContent="space-between" alignItems="center" mb={5}>
+        <Heading size="lg">Videos</Heading>
+        <Flex gap={2}>
+          <Button colorScheme="blue" onClick={() => setViewType("list")}>
+            List
+          </Button>
+          <Button colorScheme="blue" onClick={() => setViewType("thumbnails")}>
+            Thumbnails
+          </Button>
+        </Flex>
+      </Flex>
 
-      {loading ? (
-        <Flex minH={"30vh"} justifyContent={"center"} alignItems={"center"}>
-          <Spinner m={"auto"} />
-        </Flex>
-      ) : (
-        <Flex
-          justifyContent={selectedVideo ? "flex-start" : "center"}
-          gap={"16px"}
-          p={"16px"}
-          flexWrap={"wrap"}
-        >
-          {videos.map((vid) => {
-            return (
-              <Flex gap={"6px"} flexDir={"column"}>
-                <Image width={"200px"} height={"200px"} src={vid?.image} />
-                <Text maxW={"200px"} noOfLines={1}>
-                  {getVideoTitleFromURL(vid?.url)}
-                </Text>
-                <CustomButton
-                  text="View"
-                  onClick={() => onVideoClickHandler(vid)}
-                />
-              </Flex>
-            );
-          })}
-        </Flex>
-      )}
-      {videos && videos?.length > 0 && !loading && !selectedVideo && (
-        <Box py={"16px"}>
-          <Pagination
-            totalPages={data?.total_results}
-            onPageChange={(sp) => setPage(sp)}
-            currentPage={page}
-          />
-        </Box>
-      )}
+      {/* Video Grid */}
+      <Grid
+        templateColumns={
+          viewType === "list" ? "1fr" : "repeat(auto-fill, minmax(250px, 1fr))"
+        }
+        gap={5}
+      >
+        {videos.map((video) => (
+          <Box
+            key={video.sys.id}
+            borderWidth="1px"
+            borderRadius="lg"
+            p={4}
+            _hover={{ boxShadow: "lg", cursor: "pointer" }}
+          >
+            {/* Video Preview */}
+            {video.fields.videoFile?.fields?.file?.url && (
+              <Box
+                as="video"
+                src={video.fields.videoFile?.fields?.file?.url}
+                muted
+                playsInline
+                style={{
+                  width: "100%",
+                  height: "200px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                  marginBottom: "16px",
+                  pointerEvents: "none", // Prevents play functionality
+                }}
+              />
+            )}
+            {/* Title and Metadata */}
+            <Heading size="md" mb={2}>
+              {video.fields.title}
+            </Heading>
+            <Text fontSize="sm" color="gray.600" mb={3}>
+              {new Date(video.fields.uploadedDate).toLocaleDateString()}
+            </Text>
+            <Link
+              as={RouterLink}
+              to={`/video/${video.sys.id}`}
+              color="blue.500"
+              fontWeight="bold"
+            >
+              View Now
+            </Link>
+          </Box>
+        ))}
+      </Grid>
     </Box>
   );
-}
+};
 
-export default VideoDetailPage;
+export default Videos;

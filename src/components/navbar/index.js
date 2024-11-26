@@ -50,14 +50,14 @@ const Navbar = () => {
         <Spacer />
 
         {/* Account Section */}
-        <HStack spacing={4}>
+        {/* <HStack spacing={4}>
           <Link href="#account" color="black">
             Account
           </Link>
           <Link href="#logout" color="black">
             Logout
           </Link>
-        </HStack>
+        </HStack> */}
       </Flex>
     </StyledNavbar>
   );
