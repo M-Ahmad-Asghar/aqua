@@ -13,6 +13,7 @@ import PDFList from "../pages/pdfs/PDFList";
 import SingleVideo from "../pages/videoDetails/SingleVideo";
 import WebinarList from "../pages/webinar/WebinarList";
 import WebinarDetail from "../pages/webinar/WebinarDetail";
+import WebinarRegistrationForm from "../pages/webinar/WebinarRegistrationForm";
 
 export const protectedRoutes = createBrowserRouter([
   {
@@ -45,7 +46,7 @@ export const protectedRoutes = createBrowserRouter([
       },
       {
         path: "/webinar/:id",
-        element: <WebinarDetail />,
+        element: <WebinarRegistrationForm />,
       },
       {
         path: "/ask-ai",
