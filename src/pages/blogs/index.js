@@ -2,20 +2,29 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { documentToReactComponents } from "@contentful/rich-text-react-renderer";
 import client from "../../config/contentfulClient";
-import { Badge, Button, Flex, Image, Spinner } from "@chakra-ui/react";
+import { Badge, Button, Flex, Image, Spinner, Box, Heading, Text } from "@chakra-ui/react";
 // Rich Text Rendering Customizations
 import { BLOCKS, INLINES } from "@contentful/rich-text-types";
+import { formatDate } from "../../utils/dateFormatter";
+
 const BlogDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [blog, setBlog] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [relatedBlogs, setRelatedBlogs] = useState([]);
 
   useEffect(() => {
     // Fetch the current blog
     client
       .getEntry(id)
-      .then((entry) => setBlog(entry))
+      .then((entry) => {
+        setBlog(entry);
+        // Fetch related blogs based on category
+        if (entry.fields.category && entry.fields.category[0]?.sys?.id) {
+          fetchRelatedBlogs(entry.fields.category[0].sys.id);
+        }
+      })
       .catch((error) => console.error("Error fetching blog:", error));
 
     // Fetch all categories
@@ -32,13 +41,26 @@ const BlogDetail = () => {
       .catch((error) => console.error("Error fetching categories:", error));
   }, [id]);
 
+  // Fetch related blogs based on category ID
+  const fetchRelatedBlogs = (categoryId) => {
+    client
+      .getEntries({
+        content_type: "blogPage",
+        "fields.category.sys.id": categoryId, // Filter by category
+        limit: 3, // Limit to 3 related blogs
+        select: "fields.title,sys.id,fields.image,fields.createdDate,fields.tags",
+      })
+      .then((response) => setRelatedBlogs(response.items))
+      .catch((error) => console.error("Error fetching related blogs:", error));
+  };
+
   if (!blog)
     return (
       <Flex minH={"60vh"} justifyContent={"center"} alignItems={"center"}>
         <Spinner m={"auto"} />
       </Flex>
     );
-
+    console.log("relatedBlogs", relatedBlogs);
   return (
     <div style={styles.container}>
       <Flex wrap="wrap" mb={6} gap={3}>
@@ -78,6 +100,46 @@ const BlogDetail = () => {
       <div style={styles.body}>
         {documentToReactComponents(blog.fields.body, renderOptions)}
       </div>
+
+      {/* Related Blogs Section */}
+      <Box mt={8}>
+        <Heading size="lg" mb={4}>
+          Related Blogs
+        </Heading>
+        <Flex wrap="wrap" gap={5}>
+          {relatedBlogs.length > 0 ? (
+            relatedBlogs.map((relatedBlog) => (
+              <Box
+                key={relatedBlog.sys.id}
+                maxW="250px"
+                borderWidth="1px"
+                borderRadius="lg"
+                overflow="hidden"
+                cursor="pointer"
+                onClick={() => navigate(`/blogs/${relatedBlog.sys.id}`)} // Navigate to related blog
+                _hover={{ boxShadow: "lg" }}
+              >
+                {/* Image */}
+                <Image
+                  src={relatedBlog.fields.image?.fields?.file?.url}
+                  alt={relatedBlog.fields.title}
+                  height="150px"
+                  objectFit="cover"
+                  width="300px"
+                />
+                <Box p={4}>
+                  <Heading size="sm">{relatedBlog.fields.title}</Heading>
+                  <Text fontSize="sm" color="gray.600">
+                    {formatDate(relatedBlog.fields.createdDate)}
+                  </Text>
+                </Box>
+              </Box>
+            ))
+          ) : (
+            <Text>No related blogs found.</Text>
+          )}
+        </Flex>
+      </Box>
     </div>
   );
 };

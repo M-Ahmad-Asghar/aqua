@@ -8,8 +8,11 @@ function BasicLayout() {
   return (
     <StyledBasicLayout>
       <Navbar />
-      <Box flex={1} overflow={"auto"}>
+      <Box flex={1}  overflow={"auto"}>
+        <Box minH={"81vh"}>
         <Outlet />
+
+        </Box>
         <Footer />
       </Box>
     </StyledBasicLayout>

@@ -1,18 +1,18 @@
 import React from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { BasicLayout } from "../layouts";
 import {
   AskAI,
-  BlogsPage,
   Dashboard,
-  PDFsPage,
-  VideoDetailPage,
+  VideoDetailPage
 } from "../pages";
 import Blogs from "../pages/blogPage";
 import Blog from "../pages/blogs";
-import SingleVideo from "../pages/videoDetails/SingleVideo";
-import PDFList from "../pages/pdfs/PDFList";
 import PDFDetail from "../pages/pdfs/PDFDetail";
+import PDFList from "../pages/pdfs/PDFList";
+import SingleVideo from "../pages/videoDetails/SingleVideo";
+import WebinarList from "../pages/webinar/WebinarList";
+import WebinarDetail from "../pages/webinar/WebinarDetail";
 
 export const protectedRoutes = createBrowserRouter([
   {
@@ -38,6 +38,14 @@ export const protectedRoutes = createBrowserRouter([
       {
         path: "/pdf/:id",
         element: <PDFDetail />,
+      },
+      {
+        path: "/webinars",
+        element: <WebinarList />,
+      },
+      {
+        path: "/webinar/:id",
+        element: <WebinarDetail />,
       },
       {
         path: "/ask-ai",
