@@ -1,4 +1,4 @@
-// src/App.js
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -8,36 +8,89 @@ import {
   Link,
   SimpleGrid,
   Text,
+  Spinner,
+  Image,
 } from "@chakra-ui/react";
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  rootSelector,
-  selectWebinarVideos,
-  webinarSelector,
-} from "../../store/selectors";
-import { fetchWebinarVideos } from "../../store/thunks/webinar";
-import { getVideoTitleFromURL } from "../../helpers";
+import client from "../../config/contentfulClient"; // Assuming this is the Contentful client
 import { useNavigate } from "react-router-dom";
-import { updateSelectedVideo } from "../../store/reducers/webinar";
+import axios from "axios";
+import { Swiper, SwiperSlide } from "swiper/react";
+import 'swiper/css'; // Core styles
+import 'swiper/css/navigation'; // If you're using navigation
+import 'swiper/css/pagination'; // If you're using pagination
 
 function Dashboard() {
-  const dispatch = useDispatch();
-  const videos = useSelector(selectWebinarVideos);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    dispatch(
-      fetchWebinarVideos({
-        page: 1,
-        pageSize: 3,
-      })
-    );
-  }, []);
+  // States to hold the fetched data
+  const [videos, setVideos] = useState([]);
+  const [pdfs, setPdfs] = useState([]);
+  const [blogs, setBlogs] = useState([]);
+  const [webinars, setWebinars] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const onVideoClick = (video) => {
-    dispatch(updateSelectedVideo(video));
-    navigate('/videos')
+  const apiKey = process.env.REACT_APP_WEBINAR_KIT_API_KEY || "";
+
+  // Fetch videos, PDFs, blogs, and webinars from Contentful and WebinarKit
+  useEffect(() => {
+    setLoading(true);
+    // Fetch videos
+    client
+      .getEntries({
+        content_type: "videoModel", // Replace with your video content type
+        limit: 3, // Limit to 3 items
+      })
+      .then((response) => setVideos(response.items))
+      .catch((error) => console.error("Error fetching videos:", error));
+
+    // Fetch PDFs
+    client
+      .getEntries({
+        content_type: "pdfFile", // Replace with your PDF content type
+        limit: 3, // Limit to 3 items
+      })
+      .then((response) => setPdfs(response.items))
+      .catch((error) => console.error("Error fetching PDFs:", error));
+
+    // Fetch blogs
+    client
+      .getEntries({
+        content_type: "blogPage", // Replace with your blog content type
+        limit: 3, // Limit to 3 items
+      })
+      .then((response) => setBlogs(response.items))
+      .catch((error) => console.error("Error fetching blogs:", error));
+
+    // Fetch webinars from WebinarKit API
+    axios
+      .get("https://webinarkit.com/api/webinars", {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      })
+      .then((response) => {
+        setWebinars(response.data.results);
+      })
+      .catch((error) => {
+        console.error("Error fetching webinars:", error);
+      })
+      .finally(() => setLoading(false));
+  }, [apiKey]);
+
+  const onVideoClick = (videoId) => {
+    navigate(`/video/${videoId}`);
+  };
+
+  const onBlogClick = (blogId) => {
+    navigate(`/blogs/${blogId}`);
+  };
+
+  const onPdfClick = (pdfId) => {
+    navigate(`/pdf/${pdfId}`);
+  };
+
+  const onWebinarClick = (webinarId) => {
+    navigate(`/webinar/${webinarId}`);
   };
 
   return (
@@ -50,21 +103,43 @@ function Dashboard() {
         textAlign="center"
       >
         <Container maxW="container.md">
-          <Heading size="2xl" mb={4}>
-            Welcome Back, John Doe
+          {/* Webinars Carousel */}
+          <Heading size="2xl" mb={8}>
+            Upcoming Webinars
           </Heading>
-          <Text fontSize="lg" mb={4}>
-            Your Next Webinar is:
-          </Text>
-          <Text fontSize="xl" fontWeight="bold" mb={2}>
-            Setting Up Your iPhone
-          </Text>
-          <Text fontSize="md">
-            Thursday, November 4, 2024 | 3:00 - 4:00PM EST
-          </Text>
-          <Button mt={4} size="lg" colorScheme="yellow">
-            Edit/Change Time
-          </Button>
+          <Swiper  spaceBetween={50} slidesPerView={1} autoplay={{ delay: 5 }} loop={true}>
+            {webinars.map((webinar) => (
+              <SwiperSlide key={webinar.id}>
+                <Box
+                  bg="white"
+                  margt
+                  p={6}
+                  shadow="lg"
+                  borderRadius="lg"
+                  borderWidth={1}
+                  _hover={{ transform: "scale(1.05)", transition: "0.3s" }}
+                  onClick={() => onWebinarClick(webinar.id)}
+                  cursor="pointer"
+                >
+                  {/* <Image
+                    src="/path/to/webinar-image.jpg" // You can customize webinar image if available in WebinarKit response
+                    alt={webinar.name}
+                    height="180px"
+                    objectFit="cover"
+                    borderRadius="8px"
+                    mb={4}
+                  /> */}
+                  <Heading size="md" color="blue.600" mb={2}>
+                    {webinar.name}
+                  </Heading>
+                  <Text fontSize="sm" color="gray.600" mb={4}>
+                    Type: {webinar.type === "live" ? "Live" : "Automated"}
+                  </Text>
+                  <Button colorScheme="blue">Register Now</Button>
+                </Box>
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </Container>
       </Box>
 
@@ -73,78 +148,113 @@ function Dashboard() {
         <Heading size="lg" textAlign="center" mb={8}>
           Latest Updates
         </Heading>
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8}>
-          {/* Latest Videos */}
-          <Box
-            bg="white"
-            p={6}
-            shadow="lg"
-            borderRadius="lg"
-            borderWidth={1}
-            _hover={{ transform: "scale(1.05)", transition: "0.3s" }}
-          >
-            <Heading size="md" mb={4} color="blue.600">
-              Latest Videos
-            </Heading>
-            <Flex flexDir={"column"}>
-              {videos?.map((video) => (
-                <Link
-                  onClick={() => onVideoClick(video)}
-                  maxW={"90%"}
-                  noOfLines={1}
-                  overflow={"hidden"}
-                  width={"fit-content"}
-                  key={video?.id}
-                  py={1}
+        {loading ? (
+          <Flex justifyContent="center" alignItems="center">
+            <Spinner size="xl" />
+          </Flex>
+        ) : (
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8}>
+            {/* Latest Videos */}
+            <Box
+              bg="white"
+              p={6}
+              shadow="lg"
+              borderRadius="lg"
+              borderWidth={1}
+            >
+              <Heading size="md" mb={4} color="blue.600">
+                Latest Videos
+              </Heading>
+              {videos.map((video) => (
+                <Box
+                  key={video.sys.id}
+                  mb={4}
+                  onClick={() => onVideoClick(video.sys.id)}
                 >
-                  {getVideoTitleFromURL(video?.url)}
-                </Link>
+                  <video
+                    width="100%"
+                    height="180px"
+                    controls={false}
+                    muted
+                    loop
+                    style={{ borderRadius: "8px" }}
+                  >
+                    <source
+                      src={video.fields.videoFile?.fields?.file?.url}
+                      type="video/mp4"
+                    />
+                    Your browser does not support the video tag.
+                  </video>
+                  <Text fontSize="xl" mt={2}>
+                    {video.fields.title}
+                  </Text>
+                </Box>
               ))}
-            </Flex>
-          </Box>
+            </Box>
 
-          {/* Latest PDFs */}
-          <Box
-            bg="white"
-            p={6}
-            shadow="lg"
-            borderRadius="lg"
-            borderWidth={1}
-            _hover={{ transform: "scale(1.05)", transition: "0.3s" }}
-          >
-            <Heading size="md" mb={4} color="blue.600">
-              Latest PDFs
-            </Heading>
-            <Flex flexDir={"column"}>
-              {["PDF Title 1", "PDF Title 2", "PDF Title 3"].map((title) => (
-                <Link width={"fit-content"} key={title} py={1}>
-                  {title}
-                </Link>
+            {/* Latest PDFs */}
+            <Box
+              bg="white"
+              p={6}
+              shadow="lg"
+              borderRadius="lg"
+              borderWidth={1}
+            >
+              <Heading size="md" mb={4} color="blue.600">
+                Latest PDFs
+              </Heading>
+              {pdfs.map((pdf) => (
+                <Box
+                  key={pdf.sys.id}
+                  mb={4}
+                  onClick={() => onPdfClick(pdf.sys.id)}
+                >
+                  <iframe
+                    src={pdf.fields.file?.fields?.file?.url}
+                    width="100%"
+                    height="180px"
+                    style={{ borderRadius: "8px" }}
+                    title={pdf.fields.title}
+                  ></iframe>
+                  <Text fontSize="sm" mt={2}>
+                    {pdf.fields.title}
+                  </Text>
+                </Box>
               ))}
-            </Flex>
-          </Box>
+            </Box>
 
-          {/* Latest Blogs */}
-          <Box
-            bg="white"
-            p={6}
-            shadow="lg"
-            borderRadius="lg"
-            borderWidth={1}
-            _hover={{ transform: "scale(1.05)", transition: "0.3s" }}
-          >
-            <Heading size="md" mb={4} color="blue.600">
-              Latest Blogs
-            </Heading>
-            <Flex flexDir={"column"}>
-              {["Blog Title 1", "Blog Title 2", "Blog Title 3"].map((title) => (
-                <Link width={"fit-content"} key={title} py={1}>
-                  {title}
-                </Link>
+            {/* Latest Blogs */}
+            <Box
+              bg="white"
+              p={6}
+              shadow="lg"
+              borderRadius="lg"
+              borderWidth={1}
+            >
+              <Heading size="md" mb={4} color="blue.600">
+                Latest Blogs
+              </Heading>
+              {blogs.map((blog) => (
+                <Box
+                  key={blog.sys.id}
+                  mb={4}
+                  onClick={() => onBlogClick(blog.sys.id)}
+                >
+                  <Image
+                    src={blog.fields.image?.fields?.file?.url}
+                    alt={blog.fields.title}
+                    height="180px"
+                    objectFit="cover"
+                    borderRadius="8px"
+                  />
+                  <Text fontSize="sm" mt={2}>
+                    {blog.fields.title}
+                  </Text>
+                </Box>
               ))}
-            </Flex>
-          </Box>
-        </SimpleGrid>
+            </Box>
+          </SimpleGrid>
+        )}
       </Container>
     </Box>
   );

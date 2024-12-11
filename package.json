@@ -26,6 +26,7 @@
     "redux": "^4.1.2",
     "redux-persist": "^6.0.0",
     "remark-gfm": "^4.0.0",
+    "swiper": "^11.1.15",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

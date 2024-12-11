@@ -6,6 +6,7 @@ import { StyledNavbar } from "../style";
 const Navbar = () => {
   const { pathname } = useLocation();
   const navItems = [
+    { name: "Home", path: "/" },
     { name: "Webinars", path: "/webinars" },
     { name: "Videos", path: "/videos", isSelected: true },
     { name: "PDF’s", path: "/pdfs" },
