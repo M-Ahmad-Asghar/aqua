@@ -18,9 +18,7 @@ const Navbar = () => {
     <StyledNavbar>
       <Flex width={'100%'} alignItems="center" justifyContent="space-between">
         {/* Logo Section */}
-        <Text fontSize="2xl" fontWeight="bold" color="black">
-          Logo
-        </Text>
+       <img width={120} src="/logo.webp" />
 
         {/* Nav Links */}
         <HStack pl={"80px"} spacing={4}>
@@ -33,11 +31,11 @@ const Navbar = () => {
                 px={3}
                 py={2}
                 rounded="md"
-                bg={isSelected ? "#50B7F0" : "transparent"}
+                bg={isSelected ? "#e93d3d" : "transparent"}
                 fontWeight={500}
                 _hover={{
                   textDecoration: "none",
-                  bg: "#50B7F0",
+                  bg: "#e93d3d",
                   color: "white",
                 }}
                 color={isSelected ? "white" : "black"}

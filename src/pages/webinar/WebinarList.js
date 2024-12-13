@@ -41,7 +41,9 @@ const WebinarList = () => {
                 <Text mt={2}>
                   <b>Type:</b> {webinar.type}
                 </Text>
-                <Button as={RouterLink} to={`/webinar/${webinar.id}`} colorScheme="blue" mt={3}>
+                <Button as={RouterLink}
+                    color="white"
+                    to={`/webinar/${webinar.id}`} bgColor="#e93d3d" mt={3}>
                   View Details
                 </Button>
               </CardBody>

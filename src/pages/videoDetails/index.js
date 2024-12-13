@@ -20,10 +20,14 @@ const Videos = () => {
       <Flex justifyContent="space-between" alignItems="center" mb={5}>
         <Heading size="lg">Videos</Heading>
         <Flex gap={2}>
-          <Button colorScheme="blue" onClick={() => setViewType("list")}>
+          <Button bgColor="#e93d3d" 
+                    color="white"
+                    onClick={() => setViewType("list")}>
             List
           </Button>
-          <Button colorScheme="blue" onClick={() => setViewType("thumbnails")}>
+          <Button bgColor="#e93d3d" 
+                    color="white"
+                    onClick={() => setViewType("thumbnails")}>
             Thumbnails
           </Button>
         </Flex>

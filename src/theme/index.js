@@ -5,7 +5,7 @@ export const theme = extendTheme({
     tokens: {
       colors: {
         borderColor: "#676879",
-        primary: "#50B7F0",
+        primary: "#e93d3d",
       },
     },
   },

@@ -44,9 +44,10 @@ const PDFDetail = () => {
       <Flex wrap="wrap" mb={6} gap={3}>
         {categories.map((category) => (
           <Button
-            key={category.id}
+          color="white"
+          key={category.id}
             variant="outline"
-            colorScheme="blue"
+            bgColor="#e93d3d"
             onClick={() => navigate(`/pdfs?category=${category.id}`)}
           >
             {category.name}

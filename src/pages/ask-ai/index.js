@@ -125,7 +125,7 @@ function AskAI() {
           })}
           {loading && (
             <Text
-              bgColor={"#50B7F0"}
+              bgColor={"#e93d3d"}
               p={"8px"}
               borderRadius={"50px"}
               px={"20px"}

@@ -83,16 +83,19 @@ function Blogs() {
       <Flex wrap="wrap" mb={6} gap={3}>
         {categories.map((category) => (
           <Button
-            key={category.id}
+          color="white"
+          key={category.id}
             variant={selectedCategory === category.id ? "solid" : "outline"}
-            colorScheme="blue"
+            bgColor="#e93d3d"
             onClick={() => handleCategoryClick(category.id)}
           >
             {category.name}
           </Button>
         ))}
         {selectedCategory && (
-          <Button variant="outline" onClick={() => setSearchParams({})}>
+          <Button 
+          color="white"
+          variant="outline" onClick={() => setSearchParams({})}>
             Clear Filter
           </Button>
         )}
@@ -136,7 +139,7 @@ function Blogs() {
                     {blog.fields.tags?.map((tag, index) => (
                       <Badge
                         key={index}
-                        colorScheme="blue"
+                        bgColor="#e93d3d"
                         fontSize="12px"
                         px={2}
                         py={1}

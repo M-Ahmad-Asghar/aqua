@@ -5,7 +5,7 @@ export const CustomButton = (props) => {
       variant = "primary",
       width = "auto",
       bg = variant === "primary"
-        ? "#50B7F0"
+        ? "#e93d3d"
         : variant === "label"
           ? "theme.brown.100"
           : 'transparent',

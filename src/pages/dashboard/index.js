@@ -10,6 +10,7 @@ import {
   Text,
   Spinner,
   Image,
+  Center,
 } from "@chakra-ui/react";
 import client from "../../config/contentfulClient"; // Assuming this is the Contentful client
 import { useNavigate } from "react-router-dom";
@@ -96,7 +97,7 @@ function Dashboard() {
   return (
     <Box minH="100vh" display="flex" flexDirection="column">
       <Box
-        bgGradient="linear(to-r, blue.500, blue.300)"
+        bgColor="#e93d3d"
         color="white"
         flex="1"
         py={40}
@@ -129,13 +130,13 @@ function Dashboard() {
                     borderRadius="8px"
                     mb={4}
                   /> */}
-                  <Heading size="md" color="blue.600" mb={2}>
+                  <Heading size="md" color="black" mb={2}>
                     {webinar.name}
                   </Heading>
                   <Text fontSize="sm" color="gray.600" mb={4}>
                     Type: {webinar.type === "live" ? "Live" : "Automated"}
                   </Text>
-                  <Button colorScheme="blue">Register Now</Button>
+                  <Button bgColor={"#e93d3d"} color={"white"}>Register Now</Button>
                 </Box>
               </SwiperSlide>
             ))}
@@ -162,7 +163,7 @@ function Dashboard() {
               borderRadius="lg"
               borderWidth={1}
             >
-              <Heading size="md" mb={4} color="blue.600">
+              <Heading size="md" mb={4} color="black">
                 Latest Videos
               </Heading>
               {videos.map((video) => (
@@ -190,6 +191,7 @@ function Dashboard() {
                   </Text>
                 </Box>
               ))}
+            <Center><Link fontWeight={"bold"} href="/videos" >See All</Link></Center>
             </Box>
 
             {/* Latest PDFs */}
@@ -200,7 +202,7 @@ function Dashboard() {
               borderRadius="lg"
               borderWidth={1}
             >
-              <Heading size="md" mb={4} color="blue.600">
+              <Heading size="md" mb={4} color="black">
                 Latest PDFs
               </Heading>
               {pdfs.map((pdf) => (
@@ -221,6 +223,7 @@ function Dashboard() {
                   </Text>
                 </Box>
               ))}
+            <Center><Link fontWeight={"bold"} href="/pdfs" >See All</Link></Center>
             </Box>
 
             {/* Latest Blogs */}
@@ -231,10 +234,11 @@ function Dashboard() {
               borderRadius="lg"
               borderWidth={1}
             >
-              <Heading size="md" mb={4} color="blue.600">
+              <Heading size="md" mb={4} color="black">
                 Latest Blogs
               </Heading>
-              {blogs.map((blog) => (
+            <Box>
+            {blogs.map((blog) => (
                 <Box
                   key={blog.sys.id}
                   mb={4}
@@ -252,6 +256,8 @@ function Dashboard() {
                   </Text>
                 </Box>
               ))}
+            </Box>
+            <Center><Link fontWeight={"bold"} href="/blogs" >See All</Link></Center>
             </Box>
           </SimpleGrid>
         )}

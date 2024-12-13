@@ -190,8 +190,10 @@ const WebinarRegistrationForm = () => {
             </FormControl>
 
             <Button
+                    color="white"
+
               type="submit"
-              colorScheme="blue"
+              bgColor="#e93d3d"
               isLoading={submitting}
               loadingText="Registering..."
               width="full"

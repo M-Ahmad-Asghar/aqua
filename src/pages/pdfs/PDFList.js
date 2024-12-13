@@ -69,7 +69,8 @@ const PDFList = () => {
           <Button
             key={category.id}
             variant={selectedCategory === category.id ? "solid" : "outline"}
-            colorScheme="blue"
+            color="white"
+            bgColor="#e93d3d"
             onClick={() => handleCategoryClick(category.id)}
           >
             {category.name}

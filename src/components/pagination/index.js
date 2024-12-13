@@ -60,11 +60,12 @@ export const Pagination = ({ totalPages, currentPage, onPageChange }) => {
                     rounded={'0%'}
                     key={index}
                     onClick={() => handleClick(pageNumber)}
-                    color={currentPage === pageNumber ? 'white' : 'theme.gray.300'}
-                    bg={currentPage === pageNumber ? '#50B7F0' : 'transparent'}
+                    // color={currentPage === pageNumber ? 'white' : 'theme.gray.300'}
+                    bg={currentPage === pageNumber ? '#e93d3d' : 'transparent'}
                     isDisabled={pageNumber === '...'}
                     px={4}
                     height={'100%'}
+                    color="white"
                     minW={'32px'}
                     borderRight={'1px solid'}
                     borderColor={'theme.gray.300'}

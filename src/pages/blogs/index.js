@@ -68,7 +68,8 @@ const BlogDetail = () => {
           <Button
             key={category.id}
             variant="outline"
-            colorScheme="blue"
+            color="white"
+            bgColor="#e93d3d"
             onClick={() => navigate(`/blogs?category=${category.id}`)}
           >
             {category.name}
@@ -87,7 +88,7 @@ const BlogDetail = () => {
         {blog?.fields?.tags?.map((tag, index) => (
           <Badge
             key={index}
-            colorScheme="blue"
+            bgColor="#e93d3d"
             fontSize="14px"
             px={3}
             py={1}

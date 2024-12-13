@@ -56,7 +56,9 @@ const WebinarDetail = () => {
             ))}
           </Box>
 
-          <Button as={RouterLink} to="/webinars" colorScheme="blue" mt={5}>
+          <Button as={RouterLink} 
+                    color="white"
+                    to="/webinars" bgColor="#e93d3d" mt={5}>
             Back to Webinars
           </Button>
         </>

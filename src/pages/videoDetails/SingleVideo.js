@@ -67,7 +67,9 @@ const VideoDetail = () => {
   return (
     <Box maxWidth="800px" mx="auto" p={5}>
       <Flex justifyContent="space-between" alignItems="center" mb={5}>
-        <Button as={RouterLink} to="/videos" colorScheme="blue">
+        <Button as={RouterLink} to="/videos" 
+                    color="white"
+                    bgColor="#e93d3d">
           Back to Videos
         </Button>
       </Flex>
