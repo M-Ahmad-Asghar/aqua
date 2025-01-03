@@ -11,14 +11,16 @@ import {
   Spinner,
   Image,
   Center,
+  Divider ,
 } from "@chakra-ui/react";
 import client from "../../config/contentfulClient"; // Assuming this is the Contentful client
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Swiper, SwiperSlide } from "swiper/react";
-import 'swiper/css'; // Core styles
-import 'swiper/css/navigation'; // If you're using navigation
-import 'swiper/css/pagination'; // If you're using pagination
+import "swiper/css"; // Core styles
+import "swiper/css/navigation"; // If you're using navigation
+import "swiper/css/pagination"; // If you're using pagination
+import { getYouTubeThumbnailUrl } from "../../utils/thumbnailUrlExtract";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -96,26 +98,24 @@ function Dashboard() {
 
   return (
     <Box minH="100vh" display="flex" flexDirection="column">
-      <Box
-        bgColor="#e93d3d"
-        color="white"
-        flex="1"
-        py={40}
-        textAlign="center"
-      >
+      <Box bgColor="#e93d3d" color="white" flex="1" py={40} textAlign="center">
         <Container maxW="container.md">
           {/* Webinars Carousel */}
           <Heading size="2xl" mb={8}>
             Upcoming Webinars
           </Heading>
-          <Swiper  spaceBetween={50} slidesPerView={1} autoplay={{ delay: 5 }} loop={true}>
+          <Swiper
+            spaceBetween={50}
+            slidesPerView={1}
+            autoplay={{ delay: 5 }}
+            loop={true}
+          >
             {webinars.map((webinar) => (
               <SwiperSlide key={webinar.id}>
                 <Box
                   bg="white"
                   margt
                   p={6}
-                  shadow="lg"
                   borderRadius="lg"
                   borderWidth={1}
                   _hover={{ transform: "scale(1.05)", transition: "0.3s" }}
@@ -136,7 +136,9 @@ function Dashboard() {
                   <Text fontSize="sm" color="gray.600" mb={4}>
                     Type: {webinar.type === "live" ? "Live" : "Automated"}
                   </Text>
-                  <Button bgColor={"#e93d3d"} color={"white"}>Register Now</Button>
+                  <Button bgColor={"#e93d3d"} color={"white"}>
+                    Register Now
+                  </Button>
                 </Box>
               </SwiperSlide>
             ))}
@@ -156,24 +158,29 @@ function Dashboard() {
         ) : (
           <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8}>
             {/* Latest Videos */}
-            <Box
-              bg="white"
-              p={6}
-              shadow="lg"
-              borderRadius="lg"
-              borderWidth={1}
-            >
+            <Box bg="white" p={6} borderRadius="lg" borderWidth={1}>
               <Heading size="md" mb={4} color="black">
                 Latest Videos
               </Heading>
               {videos.map((video) => (
                 <Box
+                borderWidth={2}
                   key={video.sys.id}
+                  shadow={"xl"}
+                  borderRadius="lg"
+                  cursor={"pointer"}
+                  p={"16px"}
                   mb={4}
                   onClick={() => onVideoClick(video.sys.id)}
                 >
+                  <Text textAlign={"center"}  fontWeight={"bold"} fontSize="20px" my={2}>
+                    {video.fields.title}
+                  </Text>
                   <video
                     width="100%"
+                    poster={getYouTubeThumbnailUrl(
+                      video.fields?.youTubeVideoUrl
+                    )}
                     height="180px"
                     controls={false}
                     muted
@@ -181,36 +188,39 @@ function Dashboard() {
                     style={{ borderRadius: "8px" }}
                   >
                     <source
-                      src={video.fields.videoFile?.fields?.file?.url}
+                      src={video.fields?.youTubeVideoUrl}
                       type="video/mp4"
                     />
                     Your browser does not support the video tag.
                   </video>
-                  <Text fontSize="xl" mt={2}>
-                    {video.fields.title}
-                  </Text>
                 </Box>
               ))}
-            <Center><Link fontWeight={"bold"} href="/videos" >See All</Link></Center>
+              <Center>
+                <Link fontWeight={"bold"} href="/videos">
+                  See All
+                </Link>
+              </Center>
             </Box>
 
             {/* Latest PDFs */}
-            <Box
-              bg="white"
-              p={6}
-              shadow="lg"
-              borderRadius="lg"
-              borderWidth={1}
-            >
+            <Box bg="white" p={6} borderRadius="lg" borderWidth={1}>
               <Heading size="md" mb={4} color="black">
                 Latest PDFs
               </Heading>
               {pdfs.map((pdf) => (
                 <Box
+                borderWidth={2}
                   key={pdf.sys.id}
+                  shadow={"xl"}
+                  borderRadius="lg"
+                  cursor={"pointer"}
+                  p={"16px"}
                   mb={4}
                   onClick={() => onPdfClick(pdf.sys.id)}
                 >
+                  <Text fontWeight={"bold"} textAlign={"center"} fontSize="20px" my={2}>
+                    {pdf.fields.title}
+                  </Text>
                   <iframe
                     src={pdf.fields.file?.fields?.file?.url}
                     width="100%"
@@ -218,46 +228,51 @@ function Dashboard() {
                     style={{ borderRadius: "8px" }}
                     title={pdf.fields.title}
                   ></iframe>
-                  <Text fontSize="sm" mt={2}>
-                    {pdf.fields.title}
-                  </Text>
                 </Box>
               ))}
-            <Center><Link fontWeight={"bold"} href="/pdfs" >See All</Link></Center>
+              <Center>
+                <Link fontWeight={"bold"} href="/pdfs">
+                  See All
+                </Link>
+              </Center>
             </Box>
 
             {/* Latest Blogs */}
-            <Box
-              bg="white"
-              p={6}
-              shadow="lg"
-              borderRadius="lg"
-              borderWidth={1}
-            >
+            <Box bg="white" p={6} borderRadius="lg" borderWidth={1}>
               <Heading size="md" mb={4} color="black">
                 Latest Blogs
               </Heading>
-            <Box>
-            {blogs.map((blog) => (
-                <Box
-                  key={blog.sys.id}
-                  mb={4}
-                  onClick={() => onBlogClick(blog.sys.id)}
-                >
-                  <Image
-                    src={blog.fields.image?.fields?.file?.url}
-                    alt={blog.fields.title}
-                    height="180px"
-                    objectFit="cover"
-                    borderRadius="8px"
-                  />
-                  <Text fontSize="sm" mt={2}>
-                    {blog.fields.title}
-                  </Text>
-                </Box>
-              ))}
-            </Box>
-            <Center><Link fontWeight={"bold"} href="/blogs" >See All</Link></Center>
+              <Box>
+                {blogs.map((blog) => (
+                  <Box
+                borderWidth={2}
+                key={blog.sys.id}
+                    mb={4}
+                    shadow={"xl"}
+                    borderRadius="lg"
+                    cursor={"pointer"}
+                    p={"16px"}
+                    onClick={() => onBlogClick(blog.sys.id)}
+                  >
+                       <Text fontWeight={"bold"} textAlign={"center"} fontSize="20px" my={2}>
+                      {blog.fields.title}
+                    </Text>
+                    <Image
+                      src={blog.fields.image?.fields?.file?.url}
+                      alt={blog.fields.title}
+                      height="180px"
+                      objectFit="cover"
+                      borderRadius="8px"
+                    />
+                 
+                  </Box>
+                ))}
+              </Box>
+              <Center>
+                <Link fontWeight={"bold"} href="/blogs">
+                  See All
+                </Link>
+              </Center>
             </Box>
           </SimpleGrid>
         )}

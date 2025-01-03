@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Box, Grid, Button, Heading, Flex, Text, Link } from "@chakra-ui/react";
 import client from "../../config/contentfulClient";
 import { Link as RouterLink } from "react-router-dom";
+import { getYouTubeThumbnailUrl } from "../../utils/thumbnailUrlExtract";
 
 const Videos = () => {
   const [videos, setVideos] = useState([]);
@@ -9,7 +10,7 @@ const Videos = () => {
 
   useEffect(() => {
     client
-      .getEntries({ content_type: "videoModel" }) // Replace "videoModel" with your actual content model ID
+      .getEntries({ content_type: "videoModel" }) 
       .then((response) => setVideos(response.items))
       .catch((error) => console.error("Error fetching videos:", error));
   }, []);
@@ -49,10 +50,11 @@ const Videos = () => {
             _hover={{ boxShadow: "lg", cursor: "pointer" }}
           >
             {/* Video Preview */}
-            {video.fields.videoFile?.fields?.file?.url && (
+            {video.fields?.youTubeVideoUrl && (
               <Box
                 as="video"
-                src={video.fields.videoFile?.fields?.file?.url}
+                src={video.fields?.youTubeVideoUrl}
+                poster={getYouTubeThumbnailUrl(video.fields?.youTubeVideoUrl)}
                 muted
                 playsInline
                 style={{

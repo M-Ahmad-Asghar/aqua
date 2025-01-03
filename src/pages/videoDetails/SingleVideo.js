@@ -20,6 +20,7 @@ import { Link as RouterLink } from "react-router-dom";
 import { formatDate } from "../../utils/dateFormatter";
 import { FaPlay, FaPause, FaVolumeUp, FaVolumeMute, FaExpand } from "react-icons/fa";
 import ReactPlayer from "react-player";
+import { getYouTubeThumbnailUrl } from "../../utils/thumbnailUrlExtract";
 
 const VideoDetail = () => {
   const { id } = useParams();
@@ -85,7 +86,7 @@ const VideoDetail = () => {
       <Box position="relative" bg="black" borderRadius="lg" overflow="hidden">
         <ReactPlayer
           ref={playerRef}
-          url={video.fields.videoFile?.fields?.file?.url}
+          url={video?.fields.youTubeVideoUrl}
           playing={playing}
           muted={muted}
           volume={volume}
@@ -187,8 +188,9 @@ const VideoDetail = () => {
               >
                 <Box
                   as="video"
-                  src={suggested.fields.videoFile?.fields?.file?.url}
-                  muted
+                  src={suggested.fields.youTubeVideoUrl}
+                  poster={getYouTubeThumbnailUrl(video.fields?.youTubeVideoUrl)}
+                muted
                   playsInline
                   style={{
                     width: "100%",
