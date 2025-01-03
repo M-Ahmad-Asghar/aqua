@@ -15,6 +15,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import client from "../../config/contentfulClient";
 import { formatDate } from "../../utils/dateFormatter";
+import { Link as RouterLink } from "react-router-dom";
+import { FaArrowLeft } from "react-icons/fa";
 
 function Blogs() {
   const [allBlogs, setAllBlogs] = useState([]);
@@ -76,15 +78,26 @@ function Blogs() {
   };
 
   return (
-    <Box p={"16px"} minH={"calc(100vh - 144px)"}>
-      <Heading p={"16px"}>Blogs</Heading>
+    <Box maxWidth="1200px" mx="auto" p={"16px"} minH={"calc(100vh - 144px)"}>
+      <Button
+        position={"fixed"}
+        left={"20px"}
+        leftIcon={<FaArrowLeft />}
+        as={RouterLink}
+        to="/"
+        color="white"
+        bgColor="#e93d3d"
+      >
+        Back
+      </Button>
+      <Heading pb={"16px"}>Blogs</Heading>
 
       {/* Subheader for Categories */}
       <Flex wrap="wrap" mb={6} gap={3}>
         {categories.map((category) => (
           <Button
-          color="white"
-          key={category.id}
+            color="white"
+            key={category.id}
             variant={selectedCategory === category.id ? "solid" : "outline"}
             bgColor="#e93d3d"
             onClick={() => handleCategoryClick(category.id)}
@@ -93,9 +106,11 @@ function Blogs() {
           </Button>
         ))}
         {selectedCategory && (
-          <Button 
-          color="white"
-          variant="outline" onClick={() => setSearchParams({})}>
+          <Button
+            color="white"
+            variant="outline"
+            onClick={() => setSearchParams({})}
+          >
             Clear Filter
           </Button>
         )}

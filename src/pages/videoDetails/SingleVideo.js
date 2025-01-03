@@ -18,7 +18,13 @@ import { useParams } from "react-router-dom";
 import client from "../../config/contentfulClient";
 import { Link as RouterLink } from "react-router-dom";
 import { formatDate } from "../../utils/dateFormatter";
-import { FaPlay, FaPause, FaVolumeUp, FaVolumeMute, FaExpand } from "react-icons/fa";
+import {
+  FaPlay,
+  FaPause,
+  FaVolumeUp,
+  FaVolumeMute,
+  FaExpand,
+} from "react-icons/fa";
 import ReactPlayer from "react-player";
 import { getYouTubeThumbnailUrl } from "../../utils/thumbnailUrlExtract";
 
@@ -68,9 +74,7 @@ const VideoDetail = () => {
   return (
     <Box maxWidth="800px" mx="auto" p={5}>
       <Flex justifyContent="space-between" alignItems="center" mb={5}>
-        <Button as={RouterLink} to="/videos" 
-                    color="white"
-                    bgColor="#e93d3d">
+        <Button as={RouterLink} to="/videos" color="white" bgColor="#e93d3d">
           Back to Videos
         </Button>
       </Flex>
@@ -190,7 +194,7 @@ const VideoDetail = () => {
                   as="video"
                   src={suggested.fields.youTubeVideoUrl}
                   poster={getYouTubeThumbnailUrl(video.fields?.youTubeVideoUrl)}
-                muted
+                  muted
                   playsInline
                   style={{
                     width: "100%",

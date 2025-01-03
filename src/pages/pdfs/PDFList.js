@@ -1,8 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { Box, Heading, Text, Grid, Link, Button, Flex, Spinner } from "@chakra-ui/react";
+import {
+  Box,
+  Heading,
+  Text,
+  Grid,
+  Link,
+  Button,
+  Flex,
+  Spinner,
+} from "@chakra-ui/react";
 import client from "../../config/contentfulClient";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { formatDate } from "../../utils/dateFormatter";
+import { FaArrowLeft } from "react-icons/fa";
 
 const PDFList = () => {
   const [pdfs, setPdfs] = useState([]);
@@ -46,9 +56,7 @@ const PDFList = () => {
   // Filter PDFs by Category
   const filteredPDFs = selectedCategory
     ? pdfs.filter((pdf) =>
-        pdf.fields.category?.some(
-          (cat) => cat.sys.id === selectedCategory
-        )
+        pdf.fields.category?.some((cat) => cat.sys.id === selectedCategory)
       )
     : pdfs;
 
@@ -59,6 +67,17 @@ const PDFList = () => {
 
   return (
     <Box maxWidth="1200px" mx="auto" p={5}>
+      <Button
+        position={"fixed"}
+        left={"20px"}
+        leftIcon={<FaArrowLeft />}
+        as={RouterLink}
+        to="/"
+        color="white"
+        bgColor="#e93d3d"
+      >
+        Back
+      </Button>
       <Heading size="xl" mb={5}>
         PDF Files
       </Heading>

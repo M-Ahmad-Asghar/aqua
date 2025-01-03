@@ -3,6 +3,7 @@ import { Box, Grid, Button, Heading, Flex, Text, Link } from "@chakra-ui/react";
 import client from "../../config/contentfulClient";
 import { Link as RouterLink } from "react-router-dom";
 import { getYouTubeThumbnailUrl } from "../../utils/thumbnailUrlExtract";
+import { FaArrowLeft } from "react-icons/fa";
 
 const Videos = () => {
   const [videos, setVideos] = useState([]);
@@ -10,25 +11,31 @@ const Videos = () => {
 
   useEffect(() => {
     client
-      .getEntries({ content_type: "videoModel" }) 
+      .getEntries({ content_type: "videoModel" })
       .then((response) => setVideos(response.items))
       .catch((error) => console.error("Error fetching videos:", error));
   }, []);
-  console.log("videos", videos);
   return (
     <Box maxWidth="1200px" mx="auto" p={5}>
+        <Button position={"fixed"} left={"20px"} leftIcon={<FaArrowLeft />} as={RouterLink} to="/" color="white" bgColor="#e93d3d">
+          Back
+        </Button>
       {/* Header */}
       <Flex justifyContent="space-between" alignItems="center" mb={5}>
         <Heading size="lg">Videos</Heading>
         <Flex gap={2}>
-          <Button bgColor="#e93d3d" 
-                    color="white"
-                    onClick={() => setViewType("list")}>
+          <Button
+            bgColor="#e93d3d"
+            color="white"
+            onClick={() => setViewType("list")}
+          >
             List
           </Button>
-          <Button bgColor="#e93d3d" 
-                    color="white"
-                    onClick={() => setViewType("thumbnails")}>
+          <Button
+            bgColor="#e93d3d"
+            color="white"
+            onClick={() => setViewType("thumbnails")}
+          >
             Thumbnails
           </Button>
         </Flex>

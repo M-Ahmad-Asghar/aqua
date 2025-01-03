@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { Box, Heading, Grid, Card, CardBody, Text, Spinner, Button } from "@chakra-ui/react";
+import {
+  Box,
+  Heading,
+  Grid,
+  Card,
+  CardBody,
+  Text,
+  Spinner,
+  Button,
+} from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
 import axios from "axios";
+import { FaArrowLeft } from "react-icons/fa";
 
 const WebinarList = () => {
   const [webinars, setWebinars] = useState([]);
@@ -10,7 +20,7 @@ const WebinarList = () => {
   useEffect(() => {
     // Replace with your API Key
     const apiKey = process.env.REACT_APP_WEBINAR_KIT_API_KEY || "";
-    console.log("apiKey" , apiKey);
+    console.log("apiKey", apiKey);
     axios
       .get("https://webinarkit.com/api/webinars", {
         headers: {
@@ -28,7 +38,18 @@ const WebinarList = () => {
   }, []);
 
   return (
-    <Box p={5}>
+    <Box maxWidth="1200px" mx="auto" p={5}>
+      <Button
+        position={"fixed"}
+        left={"20px"}
+        leftIcon={<FaArrowLeft />}
+        as={RouterLink}
+        to="/"
+        color="white"
+        bgColor="#e93d3d"
+      >
+        Back
+      </Button>
       <Heading mb={5}>Webinars</Heading>
       {loading ? (
         <Spinner size="xl" />
@@ -41,9 +62,13 @@ const WebinarList = () => {
                 <Text mt={2}>
                   <b>Type:</b> {webinar.type}
                 </Text>
-                <Button as={RouterLink}
-                    color="white"
-                    to={`/webinar/${webinar.id}`} bgColor="#e93d3d" mt={3}>
+                <Button
+                  as={RouterLink}
+                  color="white"
+                  to={`/webinar/${webinar.id}`}
+                  bgColor="#e93d3d"
+                  mt={3}
+                >
                   View Details
                 </Button>
               </CardBody>
