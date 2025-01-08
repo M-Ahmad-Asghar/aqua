@@ -58,7 +58,7 @@ function AskAI() {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         const pageText = textContent.items.map((item) => item.str).join(" ");
-        
+  
         console.log(`Page Text (Document: ${doc.fields.title}, Page ${i}):`, pageText);
   
         // Normalize the text
@@ -69,7 +69,10 @@ function AskAI() {
         let match;
         while ((match = qaRegex.exec(normalizedText)) !== null) {
           const question = match[1].replace(/^Q: /, "").trim();
-          const answer = match[2].replace(/^A: /, "").trim();
+          let answer = match[2].replace(/^A: /, "").trim();
+  
+          // Remove trailing numbers or unexpected text
+          answer = answer.replace(/\s*\d+\.$/, "").trim();
   
           console.log("Extracted Q&A Pair:", { question, answer });
   
@@ -97,6 +100,7 @@ function AskAI() {
     // Return only the best match or an empty array if no matches meet the threshold
     return results.length ? [results[0]] : [];
   };
+  
   
   
   // Handle user submission
