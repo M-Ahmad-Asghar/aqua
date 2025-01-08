@@ -18,7 +18,7 @@ const Navbar = () => {
     <StyledNavbar>
       <Flex width={'100%'} alignItems="center" justifyContent="space-between">
         {/* Logo Section */}
-       <img width={120} src="/logo.webp" />
+       {/* <img width={120} src="/logo.webp" /> */}
 
         {/* Nav Links */}
         <HStack pl={"80px"} spacing={4}>

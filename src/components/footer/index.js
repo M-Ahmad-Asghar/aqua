@@ -11,7 +11,7 @@ function Footer() {
           justify="space-between"
           align="center"
         >
-          <Text>&copy; 2025 TekFlix. All Rights Reserved.</Text>
+          <Text>&copy; 2025 All Rights Reserved.</Text>
           <HStack spacing={4}>
             <Link href="#" _hover={{ color: "white" }}>
               Privacy Policy
