@@ -8,11 +8,11 @@ import {
 } from "@chakra-ui/react";
 import { getDocument } from "pdfjs-dist";
 import React, { useEffect, useState } from "react";
-import Fuse from "fuse.js"; // Added fuse.js for fuzzy matching
+import Fuse from "fuse.js"; // Using fuse.js for fuzzy matching
 import { CustomButton } from "../../components/pagination/button";
 import client from "../../config/contentfulClient";
-import { GlobalWorkerOptions, version } from "pdfjs-dist";
-import nlp from "compromise"; // Added compromise for query normalization
+import { GlobalWorkerOptions } from "pdfjs-dist";
+import nlp from "compromise"; // Using compromise for query normalization
 
 GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
@@ -21,122 +21,133 @@ function AskAI() {
   const [threadList, setThreadList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [documents, setDocuments] = useState([]);
-  // Fetch documents from Contentful
+  
   useEffect(() => {
     client
-      .getEntries({ content_type: "documentModel" }) // Replace with your content type ID
+      .getEntries({ content_type: "documentModel" })
       .then((response) => {
         setDocuments(response.items);
       })
       .catch(console.error);
   }, []);
 
-  // Helper to scroll to the bottom of the chat
-  function scrollToBottom() {
+  const scrollToBottom = () => {
     const chatParent = document.getElementById("chat_parent");
     if (chatParent) {
       chatParent.scrollTop = chatParent.scrollHeight;
     }
+  };
+// This function extracts the Q&A pairs for both inline (Q: A:) and separate blocks
+const extractQA = (text) => {
+  // For inline Q&A format: e.g., "1. Q: How do I turn my smartphone on? A: Press and hold..."
+  const inlineQaRegex = /(\d+)\.\s*Q:\s*(.*?)\s*A:\s*(.*?)(?=\d+\.\s*|$)/gs;
+  
+  // For separate block Q&A format: e.g., "41. What is an app?\nAn app is a program..."
+  const blockQaRegex = /(\d+)\.\s*(What.*?\?)\n(.*?)(?=\d+\.\s*|$)/gs;
+  
+  const qaPairs = [];
+  let match;
+
+  // Extract inline Q&A
+  while ((match = inlineQaRegex.exec(text)) !== null) {
+    const question = match[2].trim();
+    const answer = match[3].trim();
+    qaPairs.push({ question, answer });
   }
 
-  // Normalize the query using compromise
-  const normalizeQuery = (query) => {
-    const doc = nlp(query);
-    return doc.out("text"); // Normalize the text (e.g., lemmatization)
-  };
+  // Extract block Q&A (separate question and answer blocks)
+  while ((match = blockQaRegex.exec(text)) !== null) {
+    const question = match[2].trim();
+    const answer = match[3].trim();
+    qaPairs.push({ question, answer });
+  }
 
-  // Helper function to extract keywords dynamically from a string
-  const extractKeywords = (text) => {
-    const doc = nlp(text);
-    const keywords = doc.nouns().out('array'); // Extracting nouns as keywords
-    return keywords;
-  };
+  return qaPairs;
+};
 
-  // Adjusted similarity function using dynamic keyword extraction
-  const computeSimilarity = (query, target) => {
-    const queryKeywords = extractKeywords(query);
-    const targetKeywords = extractKeywords(target);
+// This function normalizes the input query by handling variations in phrasing
+const normalizeQuery = (query) => {
+  const doc = nlp(query);
+  return doc.out("text"); // Normalize text
+};
 
-    const intersection = queryKeywords.filter((word) => targetKeywords.includes(word));
-    const union = new Set([...queryKeywords, ...targetKeywords]);
+// Function to compute similarity between query and extracted question
+const computeSimilarity = (query, target) => {
+  const queryKeywords = extractKeywords(query);
+  const targetKeywords = extractKeywords(target);
 
-    return intersection.length / union.size; // Jaccard similarity based on extracted keywords
-  };
+  const intersection = queryKeywords.filter((word) => targetKeywords.includes(word));
+  const union = new Set([...queryKeywords, ...targetKeywords]);
 
-  // Relevance check function based on dynamically extracted keywords
-  const isRelevantAnswer = (answer, query) => {
-    const queryKeywords = extractKeywords(query);
-    const answerKeywords = extractKeywords(answer);
+  return intersection.length / union.size; // Jaccard similarity
+};
 
-    // Check if there are common keywords between query and answer
-    const intersection = queryKeywords.filter((keyword) => answerKeywords.includes(keyword));
+// Function to extract keywords from text (to improve matching accuracy)
+const extractKeywords = (text) => {
+  const doc = nlp(text);
+  return doc.nouns().out('array');
+};
 
-    // If there's a significant overlap in keywords, consider it relevant
-    return intersection.length > 0;
-  };
+// Function to search for relevant answers from documents
+const searchDocuments = async (query) => {
+  const results = [];
+  const queryLower = normalizeQuery(query).toLowerCase();
 
-  // Search documents function with contextual check
-  const searchDocuments = async (query) => {
-    const results = [];
-    const queryLower = normalizeQuery(query).toLowerCase(); // Use normalized query
+  for (const doc of documents) {
+    const response = await fetch(doc.fields.file?.fields?.file?.url);
+    const arrayBuffer = await response.arrayBuffer();
+    const pdf = await getDocument({ data: arrayBuffer }).promise;
+    const numPages = pdf.numPages;
 
-    for (const doc of documents) {
-      const response = await fetch(doc.fields.file?.fields?.file?.url);
-      const arrayBuffer = await response.arrayBuffer();
-      const pdf = await getDocument({ data: arrayBuffer }).promise;
-      const numPages = pdf.numPages;
+    for (let i = 1; i <= numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item) => item.str).join(" ");
 
-      for (let i = 1; i <= numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item) => item.str).join(" ");
+      const normalizedText = pageText.replace(/\s+/g, " ").trim();
 
-        const normalizedText = pageText.replace(/\s+/g, " ").trim();
-
-        // Extract Q&A pairs dynamically
-        const qaRegex = /(Q: .+?)(A: .+?)(?=Q:|$)/gs;
-        let match;
-        while ((match = qaRegex.exec(normalizedText)) !== null) {
-          const question = match[1].replace(/^Q: /, "").trim();
-          let answer = match[2].replace(/^A: /, "").trim();
-
-          // Ensure relevance without hardcoded data
-          if (isRelevantAnswer(answer, queryLower)) {
-            results.push({
-              question,
-              answer,
-              documentTitle: doc.fields.title,
-              pageNumber: i,
-            });
-          }
+      // Extract Q&A pairs from the page text
+      const qaPairs = extractQA(normalizedText);
+      qaPairs.forEach((qa) => {
+        const { question, answer } = qa;
+        // Check if the answer is relevant to the query using fuzzy matching
+        const similarity = computeSimilarity(queryLower, question.toLowerCase());
+        if (similarity > 0.2) {
+          results.push({
+            question,
+            answer,
+            documentTitle: doc.fields.title,
+            pageNumber: i,
+            similarity,
+          });
         }
-      }
+      });
     }
+  }
 
-    results.sort((a, b) => b.similarity - a.similarity);
+  // Use Fuse.js for fuzzy matching
+  const fuse = new Fuse(results, {
+    keys: ["question", "answer"],
+    threshold: 0.4, // Adjust this threshold for better fuzzy matching
+  });
+  const fuseResults = fuse.search(query);
 
-    return results.length ? [results[0]] : [];
-  };
+  return fuseResults.length ? fuseResults : results;
+};
 
-  // Handle user submission
   const onSubmitHandler = async () => {
     if (!loading && input.trim()) {
       setLoading(true);
-
-      // Add user input to the chat
-      setThreadList((prev) => [
-        ...prev,
-        { role: "user", input },
-      ]);
-
+      setThreadList((prev) => [...prev, { role: "user", input }]);
       setTimeout(() => scrollToBottom(), 10);
 
       const results = await searchDocuments(input);
+      
+      // Check if a valid answer exists in the results
+      const output = results.length && results[0].item && results[0].item.answer 
+        ? results[0].item.answer 
+        : "No answer found.";
 
-      // Extract the answer from the results or return "No answer found."
-      const output = results.length ? results[0].answer : "No answer found.";
-
-      // Add AI response to the chat
       setThreadList((prev) => [
         ...prev,
         {
@@ -147,12 +158,10 @@ function AskAI() {
 
       setInput("");
       setLoading(false);
-
       setTimeout(() => scrollToBottom(), 10);
     }
   };
 
-  // Handle Enter key for submission
   const onKeyDownHandler = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
