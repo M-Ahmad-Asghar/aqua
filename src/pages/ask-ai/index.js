@@ -8,9 +8,12 @@ import {
 } from "@chakra-ui/react";
 import { getDocument } from "pdfjs-dist";
 import React, { useEffect, useState } from "react";
+import Fuse from "fuse.js"; // Added fuse.js for fuzzy matching
 import { CustomButton } from "../../components/pagination/button";
 import client from "../../config/contentfulClient";
 import { GlobalWorkerOptions, version } from "pdfjs-dist";
+import nlp from "compromise"; // Added compromise for query normalization
+
 GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 function AskAI() {
@@ -18,7 +21,6 @@ function AskAI() {
   const [threadList, setThreadList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [documents, setDocuments] = useState([]);
-  
   // Fetch documents from Contentful
   useEffect(() => {
     client
@@ -37,6 +39,13 @@ function AskAI() {
     }
   }
 
+  // Normalize the query using compromise
+  const normalizeQuery = (query) => {
+    const doc = nlp(query);
+    return doc.out("text"); // Normalize the text (e.g., lemmatization)
+  };
+
+  // Adjusted similarity function
   const computeSimilarity = (query, target) => {
     const queryWords = new Set(query.split(" "));
     const targetWords = new Set(target.split(" "));
@@ -45,63 +54,58 @@ function AskAI() {
     return intersection.size / union.size; // Jaccard similarity
   };
 
+  // Relevance check function based on context
+  const isRelevantAnswer = (answer, query) => {
+    const screenshotKeywords = ["screenshot", "screen", "capture"];
+    const cameraKeywords = ["camera", "photo", "picture"];
+
+    // Check if the answer contains any of the screenshot-related keywords
+    if (screenshotKeywords.some((word) => answer.toLowerCase().includes(word))) {
+      return true; // It's relevant for taking a screenshot
+    }
+
+    // If answer contains camera-related keywords and the query is about screenshots, it's irrelevant
+    if (cameraKeywords.some((word) => answer.toLowerCase().includes(word)) && !query.toLowerCase().includes("screenshot")) {
+      return false; // Not relevant for a screenshot question
+    }
+
+    return true;
+  };
+
+  // Search documents function with contextual check
   const searchDocuments = async (query) => {
     const results = [];
-    const queryLower = query.toLowerCase();
-  
+    const queryLower = normalizeQuery(query).toLowerCase(); // Use normalized query
+
     for (const doc of documents) {
       const response = await fetch(doc.fields.file?.fields?.file?.url);
       const arrayBuffer = await response.arrayBuffer();
       const pdf = await getDocument({ data: arrayBuffer }).promise;
       const numPages = pdf.numPages;
-  
+
       for (let i = 1; i <= numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         const pageText = textContent.items.map((item) => item.str).join(" ");
-  
-        console.log(`Page Text (Document: ${doc.fields.title}, Page ${i}):`, pageText);
-  
+
         // Normalize the text
         const normalizedText = pageText.replace(/\s+/g, " ").trim();
-  
+
         // Extract Q&A pairs
         const qaRegex = /(Q: .+?)(A: .+?)(?=Q:|$)/gs;
         let match;
         while ((match = qaRegex.exec(normalizedText)) !== null) {
           const question = match[1].replace(/^Q: /, "").trim();
           let answer = match[2].replace(/^A: /, "").trim();
-  
+
           // Remove trailing numbers or unexpected text
           answer = answer.replace(/\s*\d+\.$/, "").trim();
-  
-          console.log("Extracted Q&A Pair:", { question, answer });
-  
+
           // Compute similarity score
           const similarity = computeSimilarity(queryLower, question.toLowerCase());
-  
-          if (similarity >= 0.6) {
-            results.push({
-              question,
-              answer,
-              similarity,
-              documentTitle: doc.fields.title,
-              pageNumber: i,
-            });
-          }
-        }
 
-        // Add support for the specific format like "General Basics"
-        const generalBasicsRegex = /(\d+\.\s[^\n]+)([^\d\n]+)/g;
-        while ((match = generalBasicsRegex.exec(normalizedText)) !== null) {
-          const question = match[1].trim();
-          let answer = match[2].trim();
-          
-          console.log("Extracted General Basics Q&A Pair:", { question, answer });
-  
-          const similarity = computeSimilarity(queryLower, question.toLowerCase());
-  
-          if (similarity >= 0.5) {
+          // Check relevance and similarity before adding the result
+          if (similarity >= 0.5 && isRelevantAnswer(answer, queryLower)) {
             results.push({
               question,
               answer,
@@ -113,13 +117,10 @@ function AskAI() {
         }
       }
     }
-  
+
     // Sort results by similarity in descending order
     results.sort((a, b) => b.similarity - a.similarity);
-  
-    console.log("Matching Results:", results);
-  
-    // Return only the best match or an empty array if no matches meet the threshold
+
     return results.length ? [results[0]] : [];
   };
 
@@ -127,20 +128,20 @@ function AskAI() {
   const onSubmitHandler = async () => {
     if (!loading && input.trim()) {
       setLoading(true);
-  
+
       // Add user input to the chat
       setThreadList((prev) => [
         ...prev,
         { role: "user", input },
       ]);
-  
+
       setTimeout(() => scrollToBottom(), 10);
-  
+
       const results = await searchDocuments(input);
-  
+
       // Extract the answer from the results or return "No answer found."
       const output = results.length ? results[0].answer : "No answer found.";
-  
+
       // Add AI response to the chat
       setThreadList((prev) => [
         ...prev,
@@ -149,10 +150,10 @@ function AskAI() {
           output,
         },
       ]);
-  
+
       setInput("");
       setLoading(false);
-  
+
       setTimeout(() => scrollToBottom(), 10);
     }
   };
