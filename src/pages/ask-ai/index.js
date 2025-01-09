@@ -8,9 +8,12 @@ import {
 } from "@chakra-ui/react";
 import { getDocument } from "pdfjs-dist";
 import React, { useEffect, useState } from "react";
+import Fuse from "fuse.js"; // Added fuse.js for fuzzy matching
 import { CustomButton } from "../../components/pagination/button";
 import client from "../../config/contentfulClient";
 import { GlobalWorkerOptions, version } from "pdfjs-dist";
+import nlp from "compromise"; // Added compromise for query normalization
+
 GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 function AskAI() {
@@ -37,6 +40,12 @@ function AskAI() {
     }
   }
 
+  // Normalize the query using compromise
+  const normalizeQuery = (query) => {
+    const doc = nlp(query);
+    return doc.out("text"); // Normalize the text (e.g., lemmatization)
+  };
+
   // Adjusted similarity function
   const computeSimilarity = (query, target) => {
     const queryWords = new Set(query.split(" "));
@@ -53,12 +62,12 @@ function AskAI() {
 
     // Check if the answer contains any of the screenshot-related keywords
     if (screenshotKeywords.some((word) => answer.toLowerCase().includes(word))) {
-      return true;  // It's relevant for taking a screenshot
+      return true; // It's relevant for taking a screenshot
     }
 
     // If answer contains camera-related keywords and the query is about screenshots, it's irrelevant
     if (cameraKeywords.some((word) => answer.toLowerCase().includes(word)) && !query.toLowerCase().includes("screenshot")) {
-      return false;  // Not relevant for a screenshot question
+      return false; // Not relevant for a screenshot question
     }
 
     return true;
@@ -67,7 +76,7 @@ function AskAI() {
   // Search documents function with contextual check
   const searchDocuments = async (query) => {
     const results = [];
-    const queryLower = query.toLowerCase();
+    const queryLower = normalizeQuery(query).toLowerCase(); // Use normalized query
 
     for (const doc of documents) {
       const response = await fetch(doc.fields.file?.fields?.file?.url);
