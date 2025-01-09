@@ -45,31 +45,34 @@ function AskAI() {
     return doc.out("text"); // Normalize the text (e.g., lemmatization)
   };
 
-  // Adjusted similarity function
-  const computeSimilarity = (query, target) => {
-    const queryWords = new Set(query.split(" "));
-    const targetWords = new Set(target.split(" "));
-    const intersection = new Set([...queryWords].filter((word) => targetWords.has(word)));
-    const union = new Set([...queryWords, ...targetWords]);
-    return intersection.size / union.size; // Jaccard similarity
+  // Helper function to extract keywords dynamically from a string
+  const extractKeywords = (text) => {
+    const doc = nlp(text);
+    const keywords = doc.nouns().out('array'); // Extracting nouns as keywords
+    return keywords;
   };
 
-  // Relevance check function based on context
+  // Adjusted similarity function using dynamic keyword extraction
+  const computeSimilarity = (query, target) => {
+    const queryKeywords = extractKeywords(query);
+    const targetKeywords = extractKeywords(target);
+
+    const intersection = queryKeywords.filter((word) => targetKeywords.includes(word));
+    const union = new Set([...queryKeywords, ...targetKeywords]);
+
+    return intersection.length / union.size; // Jaccard similarity based on extracted keywords
+  };
+
+  // Relevance check function based on dynamically extracted keywords
   const isRelevantAnswer = (answer, query) => {
-    const screenshotKeywords = ["screenshot", "screen", "capture"];
-    const cameraKeywords = ["camera", "photo", "picture"];
+    const queryKeywords = extractKeywords(query);
+    const answerKeywords = extractKeywords(answer);
 
-    // Check if the answer contains any of the screenshot-related keywords
-    if (screenshotKeywords.some((word) => answer.toLowerCase().includes(word))) {
-      return true; // It's relevant for taking a screenshot
-    }
+    // Check if there are common keywords between query and answer
+    const intersection = queryKeywords.filter((keyword) => answerKeywords.includes(keyword));
 
-    // If answer contains camera-related keywords and the query is about screenshots, it's irrelevant
-    if (cameraKeywords.some((word) => answer.toLowerCase().includes(word)) && !query.toLowerCase().includes("screenshot")) {
-      return false; // Not relevant for a screenshot question
-    }
-
-    return true;
+    // If there's a significant overlap in keywords, consider it relevant
+    return intersection.length > 0;
   };
 
   // Search documents function with contextual check
@@ -88,28 +91,20 @@ function AskAI() {
         const textContent = await page.getTextContent();
         const pageText = textContent.items.map((item) => item.str).join(" ");
 
-        // Normalize the text
         const normalizedText = pageText.replace(/\s+/g, " ").trim();
 
-        // Extract Q&A pairs
+        // Extract Q&A pairs dynamically
         const qaRegex = /(Q: .+?)(A: .+?)(?=Q:|$)/gs;
         let match;
         while ((match = qaRegex.exec(normalizedText)) !== null) {
           const question = match[1].replace(/^Q: /, "").trim();
           let answer = match[2].replace(/^A: /, "").trim();
 
-          // Remove trailing numbers or unexpected text
-          answer = answer.replace(/\s*\d+\.$/, "").trim();
-
-          // Compute similarity score
-          const similarity = computeSimilarity(queryLower, question.toLowerCase());
-
-          // Check relevance and similarity before adding the result
-          if (similarity >= 0.5 && isRelevantAnswer(answer, queryLower)) {
+          // Ensure relevance without hardcoded data
+          if (isRelevantAnswer(answer, queryLower)) {
             results.push({
               question,
               answer,
-              similarity,
               documentTitle: doc.fields.title,
               pageNumber: i,
             });
@@ -118,7 +113,6 @@ function AskAI() {
       }
     }
 
-    // Sort results by similarity in descending order
     results.sort((a, b) => b.similarity - a.similarity);
 
     return results.length ? [results[0]] : [];
