@@ -12,14 +12,15 @@ import { CustomButton } from "../../components/pagination/button";
 import client from "../../config/contentfulClient";
 import { GlobalWorkerOptions, version } from "pdfjs-dist";
 GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
+
 function AskAI() {
   const [input, setInput] = useState("");
   const [threadList, setThreadList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [documents, setDocuments] = useState([]);
+  
   // Fetch documents from Contentful
   useEffect(() => {
-
     client
       .getEntries({ content_type: "documentModel" }) // Replace with your content type ID
       .then((response) => {
@@ -35,6 +36,7 @@ function AskAI() {
       chatParent.scrollTop = chatParent.scrollHeight;
     }
   }
+
   const computeSimilarity = (query, target) => {
     const queryWords = new Set(query.split(" "));
     const targetWords = new Set(target.split(" "));
@@ -42,8 +44,7 @@ function AskAI() {
     const union = new Set([...queryWords, ...targetWords]);
     return intersection.size / union.size; // Jaccard similarity
   };
-  
-  
+
   const searchDocuments = async (query) => {
     const results = [];
     const queryLower = query.toLowerCase();
@@ -79,6 +80,27 @@ function AskAI() {
           // Compute similarity score
           const similarity = computeSimilarity(queryLower, question.toLowerCase());
   
+          if (similarity >= 0.6) {
+            results.push({
+              question,
+              answer,
+              similarity,
+              documentTitle: doc.fields.title,
+              pageNumber: i,
+            });
+          }
+        }
+
+        // Add support for the specific format like "General Basics"
+        const generalBasicsRegex = /(\d+\.\s[^\n]+)([^\d\n]+)/g;
+        while ((match = generalBasicsRegex.exec(normalizedText)) !== null) {
+          const question = match[1].trim();
+          let answer = match[2].trim();
+          
+          console.log("Extracted General Basics Q&A Pair:", { question, answer });
+  
+          const similarity = computeSimilarity(queryLower, question.toLowerCase());
+  
           if (similarity >= 0.5) {
             results.push({
               question,
@@ -100,9 +122,7 @@ function AskAI() {
     // Return only the best match or an empty array if no matches meet the threshold
     return results.length ? [results[0]] : [];
   };
-  
-  
-  
+
   // Handle user submission
   const onSubmitHandler = async () => {
     if (!loading && input.trim()) {
@@ -136,7 +156,7 @@ function AskAI() {
       setTimeout(() => scrollToBottom(), 10);
     }
   };
-  
+
   // Handle Enter key for submission
   const onKeyDownHandler = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
