@@ -11,7 +11,8 @@ import React, { useEffect, useState } from "react";
 import { CustomButton } from "../../components/pagination/button";
 import client from "../../config/contentfulClient";
 import { GlobalWorkerOptions } from "pdfjs-dist";
-import nlp from "compromise"; // Using compromise for query normalization
+import nlp from "compromise"; // For query normalization
+import stringSimilarity from 'string-similarity';
 
 GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
@@ -19,112 +20,110 @@ function AskAI() {
   const [input, setInput] = useState("");
   const [threadList, setThreadList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [documents, setDocuments] = useState([]);
+  const [qaPairs, setQaPairs] = useState([]);
 
   useEffect(() => {
-    client
-      .getEntries({ content_type: "documentModel" })
-      .then((response) => {
-        setDocuments(response.items);
-      })
-      .catch(console.error);
+    const fetchDocuments = async () => {
+      try {
+        const response = await client.getEntries({ content_type: "documentModel" });
+        const pdfLinks = response.items.map((item) => item.fields.file.fields.file.url);
+        console.log("pdfLinks", pdfLinks);
+        const allQaPairs = [];
+        for (const link of pdfLinks) {
+          const pairs = await extractQaPairsFromPdf(link);
+          allQaPairs.push(...pairs);
+        }
+
+        setQaPairs(allQaPairs);
+      } catch (error) {
+        console.error("Error fetching documents:", error);
+      }
+    };
+
+    fetchDocuments();
   }, []);
 
-  const scrollToBottom = () => {
-    const chatParent = document.getElementById("chat_parent");
-    if (chatParent) {
-      chatParent.scrollTop = chatParent.scrollHeight;
+  const extractQaPairsFromPdf = async (url) => {
+    try {
+      const pdf = await getDocument(url).promise;
+      const maxPages = pdf.numPages;
+      let fullText = "";
+
+      for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const content = await page.getTextContent();
+        const pageText = content.items.map((item) => item.str).join(" ");
+        fullText += pageText + " ";
+      }
+      console.log("qaPairs", fullText);
+
+      return parseQaPairs(fullText);
+    } catch (error) {
+      console.error("Error extracting Q&A from PDF:", error);
+      return [];
     }
   };
-
-  const extractQA = (text) => {
-    const inlineQaRegex = /(\d+)\.\s*Q:\s*(.*?)\s*A:\s*(.*?)(?=\d+\.\s*|$)/gs;
-    const blockQaRegex = /(\d+)\.\s*(What.*?\?)\n(.*?)(?=\d+\.\s*|$)/gs;
+  const parseQaPairs = (text) => {
     const qaPairs = [];
+    
+    // Regex to capture question-answer pairs in the format like: "1. What is a computer? A computer is..."
+    const inlineQaRegex = /(\d+)\.\s*(.*?)\?\s*(.*?)(?=\s*\d+\.\s*|$)/gs;
     let match;
-
+  
     while ((match = inlineQaRegex.exec(text)) !== null) {
-      const question = match[2].trim();
+      const question = match[2].trim() + "?";  // Append '?' back to the question
       const answer = match[3].trim();
       qaPairs.push({ question, answer });
     }
-
-    while ((match = blockQaRegex.exec(text)) !== null) {
-      const question = match[2].trim();
-      const answer = match[3].trim();
-      qaPairs.push({ question, answer });
-    }
-
+  
     return qaPairs;
   };
+  
+  
+  
+  
+  
 
-  const normalizeQuery = (query) => {
-    const doc = nlp(query);
-    return doc.out("text");
-  };
-
-  const computeWordMatchScore = (query, question) => {
-    const queryWords = query.toLowerCase().split(/\s+/);
-    const questionWords = question.toLowerCase().split(/\s+/);
-
-    const matchedWords = queryWords.filter((word) =>
-      questionWords.includes(word)
-    );
-    return matchedWords.length / queryWords.length;
-  };
-
-  const searchDocuments = async (query) => {
-    const results = [];
-    const normalizedQuery = normalizeQuery(query);
-
-    for (const doc of documents) {
-      const response = await fetch(doc.fields.file?.fields?.file?.url);
-      const arrayBuffer = await response.arrayBuffer();
-      const pdf = await getDocument({ data: arrayBuffer }).promise;
-      const numPages = pdf.numPages;
-
-      for (let i = 1; i <= numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item) => item.str).join(" ");
-        const qaPairs = extractQA(pageText);
-
-        qaPairs.forEach((qa) => {
-          const { question, answer } = qa;
-          const matchScore = computeWordMatchScore(normalizedQuery, question);
-
-          if (matchScore > 0) {
-            results.push({ question, answer, matchScore });
-          }
-        });
+  const findBestMatch = (userQuery, qaPairs) => {
+    const normalizedQuery = nlp(userQuery).normalize({ lowercase: true, punctuation: true }).out('text');
+  
+    let highestSimilarity = 0;
+    let bestMatch = null;
+  
+    qaPairs.forEach((qa) => {
+      const normalizedQuestion = nlp(qa.question).normalize({ lowercase: true, punctuation: true }).out('text');
+      const similarity = stringSimilarity.compareTwoStrings(normalizedQuery, normalizedQuestion);
+  
+      if (similarity > highestSimilarity) {
+        highestSimilarity = similarity;
+        bestMatch = qa;
       }
-    }
-
-    results.sort((a, b) => b.matchScore - a.matchScore);
-    return results.length ? results[0] : { question: "No match found", answer: "No answer found." };
+    });
+  
+    // Threshold to avoid matching unrelated questions
+    const SIMILARITY_THRESHOLD = 0.6;
+    return highestSimilarity >= SIMILARITY_THRESHOLD ? bestMatch : null;
   };
+  
 
-  const onSubmitHandler = async () => {
-    if (!loading && input.trim()) {
-      setLoading(true);
-      setThreadList((prev) => [...prev, { role: "user", input }]);
-      setTimeout(() => scrollToBottom(), 10);
+  const onSubmitHandler = () => {
+    if (!input.trim()) return;
 
-      const result = await searchDocuments(input);
-      const output = result.answer;
+    setLoading(true);
+    const match = findBestMatch(input, qaPairs);
 
+    setTimeout(() => {
       setThreadList((prev) => [
         ...prev,
+        { role: "user", input },
         {
-          role: "system",
-          output,
+          role: "ai",
+          output: match ? match.answer : "I'm sorry, I couldn't find an answer to that question.",
         },
       ]);
-
       setInput("");
       setLoading(false);
-      setTimeout(() => scrollToBottom(), 10);
-    }
+    }, 500);
   };
 
   const onKeyDownHandler = (e) => {
@@ -135,30 +134,10 @@ function AskAI() {
   };
 
   return (
-    <Flex
-      overflow={"hidden"}
-      flexDir={"column"}
-      flex={1}
-      p={"16px"}
-      h={"calc(100vh - 144px)"}
-    >
-      <Heading pb={"16px"} px={"16px"}>
-        Ask AI
-      </Heading>
-      <Flex
-        overflow={"hidden"}
-        flex={1}
-        flexDirection={"column"}
-        justifyContent={"space-between"}
-      >
-        <Flex
-          h={"100%"}
-          overflow={"auto"}
-          p={"16px"}
-          gap={"16px"}
-          flexDir={"column"}
-          id="chat_parent"
-        >
+    <Flex overflow={"hidden"} flexDir={"column"} flex={1} p={"16px"} h={"calc(100vh - 144px)"}>
+      <Heading pb={"16px"} px={"16px"}>Ask AI</Heading>
+      <Flex overflow={"hidden"} flex={1} flexDirection={"column"} justifyContent={"space-between"}>
+        <Flex h={"100%"} overflow={"auto"} p={"16px"} gap={"16px"} flexDir={"column"} id="chat_parent">
           {threadList.map((chat, idx) => (
             <Box key={idx}>
               {chat.role === "user" ? (
