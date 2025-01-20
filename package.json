@@ -16,6 +16,7 @@
     "contentful": "^11.2.3",
     "framer-motion": "^10.18.0",
     "fuse.js": "^7.0.0",
+    "groq-sdk": "^0.12.0",
     "openai": "^4.77.3",
     "pdfjs-dist": "^4.10.38",
     "react": "^18.3.1",
